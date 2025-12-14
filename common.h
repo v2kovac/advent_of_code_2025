@@ -28,9 +28,9 @@ static Arena init_arena(size_t size) {
     return arena;
 }
 
-#define push_struct(arena, type) (type*)push(arena, sizeof(type))
-#define push_array(arena, type, count) (type*)push(arena, (count) * sizeof(type))
-static void* push(Arena* arena, size_t size) {
+#define push_struct(arena, type) (type*)push_(arena, sizeof(type))
+#define push_array(arena, type, count) (type*)push_(arena, (count) * sizeof(type))
+static void* push_(Arena* arena, size_t size) {
     assert((arena->used + size) <= arena->size);
     void* result = arena->base + arena->used;
     arena->used += size;
@@ -61,22 +61,20 @@ static char* read_entire_file(Arena* arena, char* filename) {
         return NULL;
     }
 
-    printf("Filesize: %ld bytes\n", file_size);
-
     rewind(file);
     if (errno) {
         perror("Rewind failed");
         return NULL;
     }
 
-    char* buffer = push(arena, file_size + 1);
-    fread(buffer, file_size, file_size, file);
+    char* buffer = push_array(arena, char, (size_t)file_size + 1);
+    size_t bytes_read = fread(buffer, 1, (unsigned long)file_size, file);
     if (ferror(file) != 0) {
         perror("fread failed");
         return NULL;
     }
 
-    *(buffer + file_size) = '\0';
+    *(buffer + bytes_read) = '\0';
 
     return buffer;
 }
